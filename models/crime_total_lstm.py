@@ -40,11 +40,12 @@ class LSTMNET(Sequential):
 
         self.X_train, self.X_test, self.y_train, self.y_test = self.__stage()
 
+        # run parent-class' constructor
+        super().__init__()
+
     def train(self):
         self.X_train, self.X_test = self.__transform_shape()
 
-        # run parent-class' constructor
-        super().__init__()
         # add LSTM cells
         for _ in range(self.lstm_cells):
             self.add(LSTM(self.lstm_neurons, input_shape=(1, self.maxlag)))

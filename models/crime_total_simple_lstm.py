@@ -44,7 +44,8 @@ train_predictions = model.predict(X_train)
 test_predictions = model.predict(X_test)
 
 # transform back
-train_data = np.concatenate((y_train.reshape((-1, 1)), train_predictions), axis=1)
+train_data = np.concatenate((y_train.reshape((-1, 1)), train_predictions),
+                            axis=1)
 train_data = scaler.inverse_transform(train_data)
 
 test_data = np.concatenate((y_test.reshape((-1, 1)), test_predictions), axis=1)

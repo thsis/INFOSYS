@@ -5,7 +5,7 @@ import pandas as pd
 Data: https://catalog.data.gov/dataset/crimes-2001-to-present-398a4
 """
 
-datapath = os.path.join("data", "crimes.csv")
+datapath = os.path.join("data", "crimes.zip")
 data = pd.read_csv(datapath, header=0, parse_dates=["Date"], index_col="Date")
 
 # Count all reported crime as the same.
