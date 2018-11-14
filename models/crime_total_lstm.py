@@ -13,6 +13,7 @@ from keras.layers import LSTM, Dense
 from hyperopt import tpe, hp, fmin, STATUS_OK, Trials
 from hyperopt.pyll.base import scope
 
+from matplotlib import pyplot as plt
 
 datapath = os.path.join("data", "crime_total.csv")
 dataset = pd.read_csv(datapath, index_col="date",
@@ -22,7 +23,7 @@ dataset = pd.read_csv(datapath, index_col="date",
 class LSTMNET(Sequential):
     def __init__(self, data, maxlag, lstm_neurons, lstm_cells=1,
                  lossfunc='mean_squared_error', optimizer='adam',
-                 epochs=100, batch_size=1, train_size=0.8):
+                 epochs=100, batch_size=1, train_size=0.8, verbose=True):
 
         assert len(data.shape) == 1 or data.shape[1] == 1
         assert maxlag >= 1
@@ -37,6 +38,7 @@ class LSTMNET(Sequential):
         self.lossfunc = lossfunc
         self.optimizer = optimizer
         self.epochs = epochs
+        self.verbose = verbose
 
         self.X_train, self.X_test, self.y_train, self.y_test = self.__stage()
 
@@ -54,7 +56,9 @@ class LSTMNET(Sequential):
         self.compile(loss=self.lossfunc,
                      optimizer=self.optimizer)
         self.fit(self.X_train, self.y_train,
-                 epochs=self.epochs, batch_size=self.batch_size)
+                 epochs=self.epochs,
+                 batch_size=self.batch_size,
+                 verbose=self.verbose)
 
         # self.X_train, self.X_test = self.__inverse_transform_shape()
 
@@ -115,11 +119,6 @@ class LSTMNET(Sequential):
         pass
 
 
-model = LSTMNET(dataset, maxlag=3, lstm_neurons=4, lstm_cells=1,
-                epochs=10, batch_size=3)
-model.train()
-
-
 def objective(params):
     model = LSTMNET(dataset, **params)
     model.train()
@@ -129,5 +128,27 @@ def objective(params):
 
 
 paramspace = {
-
+    "maxlag": scope.int(hp.quniform("maxlag", 0, 365, 1)),
+    "lstm_neurons": scope.int(hp.quniform("lstm_neurons", 1, 30, 1)),
+    "batch_size": scope.int(hp.quniform("batch_size", 1, 10, 1))
 }
+
+trials = Trials()
+best = fmin(fn=objective,
+            space=paramspace,
+            algo=tpe.suggest,
+            trials=trials,
+            max_evals=10)
+
+parameters = list(paramspace.keys())
+cols = len(parameters)
+fig, axes = plt.subplots(nrows=1, ncols=cols, figsize=(20, 5))
+
+for i, val in enumerate(parameters):
+    xs = np.array([t['misc']['vals'][val] for t in trials.trials]).ravel()
+    ys = [t['result']['loss'] for t in trials.trials]
+    xs, ys = zip(*sorted(zip(xs, ys)))
+    axes[i].scatter(xs, ys, s=20, linewidth=0.01, alpha=0.25)
+    axes[i].set_title(val)
+
+plt.savefig(os.path.join("models", "hyperopt-search.png"))
