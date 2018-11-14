@@ -138,7 +138,7 @@ best = fmin(fn=objective,
             space=paramspace,
             algo=tpe.suggest,
             trials=trials,
-            max_evals=10)
+            max_evals=1000)
 
 parameters = list(paramspace.keys())
 cols = len(parameters)
@@ -150,5 +150,6 @@ for i, val in enumerate(parameters):
     xs, ys = zip(*sorted(zip(xs, ys)))
     axes[i].scatter(xs, ys, s=20, linewidth=0.01, alpha=0.25)
     axes[i].set_title(val)
+    axes[i].set_ylim([0, 0.002])
 
 plt.savefig(os.path.join("models", "hyperopt-search.png"))
