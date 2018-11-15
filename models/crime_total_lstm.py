@@ -2,7 +2,7 @@ import os
 import numpy as np
 import pandas as pd
 
-from lstm import LSTMNET
+from models.lstm import LSTMNET
 from sklearn.metrics import mean_squared_error
 from hyperopt import tpe, hp, fmin, STATUS_OK, Trials
 from hyperopt.pyll.base import scope
@@ -53,10 +53,13 @@ if __name__ == "__main__":
                 trials=trials,
                 max_evals=1000)
 
-    fig, axes = plot_trials(tirals=trials, paramspace=paramspace)
+    # Fix type of optimal parameters
+    best = {key: int(val) for key, val in best.items()}
+
+    fig, axes = plot_trials(trials=trials, paramspace=paramspace)
     plt.savefig(os.path.join("models", "hyperopt-search.png"))
 
-    model = LSTMNET(**best)
+    model = LSTMNET(data=dataset, **best)
     model.train()
     model.plot_fit()
     plt.savefig(os.path.join("models", "lstm-hyperopt-fit.png"))

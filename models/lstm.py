@@ -116,7 +116,7 @@ class LSTMNET(Sequential):
         plot_train[:self.train_size] = train_fit.reshape((-1, ))
         plot_test[self.train_size:] = test_fit.reshape((-1, ))
 
-        idx = np.arange(0, len(self.data)+1, len(self.data) // 1000)
+        idx = np.arange(0, len(self.data)+1, len(self.data) // 10)
         labels = self.indices
 
         fig, ax = plt.subplots(1, 1, figsize=(11, 11))
