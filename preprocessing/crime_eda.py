@@ -22,7 +22,7 @@ primary_type_counts = primary_type_counts.sort_values(ascending=False)
 
 
 def plot_chicago(data, savepath, lowerlon=-88.0, upperlon=-87.4,
-                 lowerlat=41.62, upperlat=42.05, size=(15, 10), **kwargs):
+                 lowerlat=41.62, upperlat=42.05, size=(20, 15), **kwargs):
     """Overlay chicago map with scatterplot."""
     shapepath = os.path.join("data", "US-shapedata", "cb_2017_us_zcta510_500k")
     fig = plt.gcf()
@@ -46,6 +46,17 @@ def plot_chicago(data, savepath, lowerlon=-88.0, upperlon=-87.4,
     return fig
 
 
+def get_alpha(x):
+    if x <= 100:
+        return 1
+    elif x >= 5000:
+        return 0.01
+    else:
+        m = -99/490000
+        c = 1 - 9900/490000
+        return max(0.01, m*x+c)
+
+    
 def get_subset(data, year, crime=None):
     """Extract data that matches a specific type of crime and year."""
     if crime is None:
@@ -57,10 +68,7 @@ def get_subset(data, year, crime=None):
         category = crime.lower().replace(" ", "_")
         title = "crime" + "_" + category + "_" + str(year) + ".png"
 
-    if len(out):
-        alpha = max(1/len(out), 0.01)
-    else:
-        alpha = 1
+    alpha = get_alpha(len(out))
 
     return title, out, alpha
 
