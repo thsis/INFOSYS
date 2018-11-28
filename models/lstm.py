@@ -98,14 +98,10 @@ class LSTMNET(Sequential):
         """Transform data into tabular shape."""
         return X.reshape(shape)
 
-    # TODO: finish visualization of fit.
     def plot_fit(self):
         """Visualize fit."""
         train_fit = self.predict(self.X_train)
         test_fit = self.predict(self.X_test)
-
-        # train_fit = self.scaler.inverse_transform(train_fit)
-        # test_fit = self.scaler.inverse_transform(test_fit)
 
         plot_real = np.concatenate((self.y_train, self.y_test))
         plot_train = np.empty_like(plot_real)
