@@ -10,10 +10,11 @@ from hyperopt.pyll.base import scope
 
 from matplotlib import pyplot as plt
 
-datapath = os.path.join("data", "crime_total.csv")
-dataset = pd.read_csv(datapath, index_col=["date"],
-                      dtype={"crimes_total": np.float32},
-                      parse_dates=["date"])
+
+datapath = os.path.join("data", "crimes_district.csv")
+dataset = pd.read_csv(datapath, index_col=["Date", "District"],
+                      dtype={"crimes_district_total": np.float32},
+                      parse_dates=["Date"])
 
 
 def objective(params):
@@ -52,15 +53,15 @@ if __name__ == "__main__":
                 space=paramspace,
                 algo=tpe.suggest,
                 trials=trials,
-                max_evals=2)
+                max_evals=1000)
 
     # Fix type of optimal parameters
     best = {key: int(val) for key, val in best.items()}
 
     fig, axes = plot_trials(trials=trials, paramspace=paramspace)
-    plt.savefig(os.path.join("models", "lstm-total-hyperopt-search.png"))
+    plt.savefig(os.path.join("models", "lstm-district-hyperopt-search.png"))
 
-    model = Recurrent(data=dataset, cell=LSTM, epochs=3, **best)
+    model = Recurrent(data=dataset, cell=LSTM, **best)
     model.train()
-    model.plot_fit(os.path.join("models", "lstm-total-hyperopt-fit.png"),
-                   figsize=(20, 10))
+    model.plot_fit()
+    plt.savefig(os.path.join("models", "lstm-district-hyperopt-fit.png"))

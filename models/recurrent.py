@@ -12,15 +12,45 @@ from matplotlib import pyplot as plt
 
 
 class Recurrent(Sequential):
-    def __init__(self, data, maxlag, cell=LSTM, cell_neurons=4, num_cells=1,
+    """
+    Fit recurrent models.
+
+    Convenient class for creating recurrent architectures with different cells.
+
+    * Parameters
+        * `data`: pandas.DataFrame with **one** column. The index needs to
+           be either a `pandas.DatetimeIndex` or a `pandas.MultiIndex`
+           where the first level is a `pandas.DatetimeIndex` and the second
+           level a group indicator.
+        * `maxlag`: (`int`) maximum number of lags to create from `data`.
+        * `cell`: celltype in `[LSTM, GRU, SimpleRNN]` from `keras.layers`.
+        * `cell_neurons`: (`int`) neurons in `cell`'s hidden layer.
+        * `num_cells`: (`int`) number of cells.
+        * `lossfunc`: loss-function to be used.
+        * `optimizer`: optimizer to be used.
+        * `cellkwargs`: (`dict`) `kwargs` to `keras.Sequential.fit`-method.
+        * `fitkwargs`: (`dict`) keyword arguments for `cell.`
+        * `epochs`: (`int`) number of training-epochs.
+        * `batch_size`: (`int`) number of samples per batch.
+        * `train_size`: (`int`) propotion of training samples.
+          0 < train_size < 1.
+        * `verbose`: (`bool`) level of verbosity during training.
+    """
+
+    def __init__(self, data, maxlag, cell, cell_neurons=4, num_cells=1,
                  lossfunc='mean_squared_error', optimizer='adam',
-                 epochs=100, batch_size=1, train_size=0.8, verbose=True):
+                 cellkwargs={}, fitkwargs={}, epochs=10, batch_size=1,
+                 train_size=0.8, verbose=True):
+        """Instantiate Recurrent class."""
 
         assert maxlag >= 1
         assert 0 < train_size < 1
+        assert len(data.columns) == 1
 
         # Operate solely on a copy to avoid implicitly changing the data
         self.data = copy.deepcopy(data.sort_index())
+        self.target = self.data.columns
+        self.maxlag = maxlag
 
         # Parse Data: assume first index is the date, second the cross section.
         try:
@@ -31,11 +61,6 @@ class Recurrent(Sequential):
             self.time_label = self.data.index.name
             self.cross_label = None
             self.cross_dimension = [None]
-
-        # TODO: check if we still need those
-        self.target = self.data.columns
-        self.indices = self.data.index
-        self.maxlag = maxlag
 
         # Obtain train/test-size.
         self.train_size = train_size
@@ -52,6 +77,8 @@ class Recurrent(Sequential):
         self.epochs = epochs
         self.verbose = verbose
         self.cell_neurons = cell_neurons
+        self.fitkwargs = fitkwargs
+        self.cellkwargs = cellkwargs
 
         self.X_train, self.X_test, self.y_train, self.y_test = self.__stage()
 
@@ -59,12 +86,14 @@ class Recurrent(Sequential):
         super().__init__()
 
     def train(self):
+        """Train the model based on parameters passed to `__init__`."""
         X_train = self.__transform_shape(self.X_train)
 
         # add LSTM cells
         for _ in range(self.num_cells):
             self.add(self.cell(self.cell_neurons,
-                               input_shape=(self.batch_size, self.maxlag)))
+                               input_shape=(1, self.maxlag),
+                               **self.cellkwargs))
         # add final layer
         self.add(Dense(1))
         self.compile(loss=self.lossfunc,
@@ -72,38 +101,43 @@ class Recurrent(Sequential):
         self.fit(X_train, self.y_train,
                  epochs=self.epochs,
                  batch_size=self.batch_size,
-                 verbose=self.verbose)
+                 verbose=self.verbose,
+                 **self.fitkwargs)
+
+    def forecast(self, X):
+        """
+        Calculate predictions.
+
+        * Parameters:
+            * `X`: `numpy.ndarray` of shape (`n`, `maxlag`), `n` is arbitrary.
+
+        * Returns:
+            * `out`: predictions of model of shape (`n`, 1).
+        """
+        X_ = self.__transform_shape(X)
+        return self.predict(X_)
 
     def __stage(self):
-        """Prepare data for training."""
+        """
+        Prepare data for training.
+
+        * Returns:
+           * `(X_train, X_test, y_train, y_test)`: `numpy.ndarrays`
+        """
 
         # Separate train and test data
         locate_train, locate_test = self.__locate_train_test(self.data)
         train = self.data.loc[locate_train]
 
-        # Scale
-        # Fit scaler only on **training** data.
+        # Scale: fit scaler only on **training** data.
         self.scaler = MinMaxScaler()
         self.scaler.fit(train.values)
 
         # Scale the **whole** series
         self.data.loc[:, "y"] = self.scaler.transform(self.data.values)
 
-        # Create lagged variables.
-        cols = ["lag_" + str(i) for i in range(1, self.maxlag+1)]
-
-        for i, colname in enumerate(cols, 1):
-            if isinstance(self.data.index, pd.core.index.MultiIndex):
-                lag = self.data.groupby(self.cross_label)["y"].shift(i)
-            else:
-                lag = self.data["y"].shift(i)
-
-            self.data[colname] = lag
-
-        self.data = self.data.dropna(axis=0)
-        # Split into target and features
-        y = self.data.iloc[:, 1]
-        X = self.data.iloc[:, 2:]
+        # Create lagged variables and split into target and features.
+        X, y = self.__get_features()
 
         # Split into train- and test-set
         locate_X_train, locate_X_test = self.__locate_train_test(X)
@@ -111,7 +145,6 @@ class Recurrent(Sequential):
 
         X_train = X.loc[locate_X_train]
         X_test = X.loc[locate_X_test]
-
         y_train = y.loc[locate_y_train]
         y_test = y.loc[locate_y_test]
 
@@ -128,35 +161,97 @@ class Recurrent(Sequential):
 
         return X_train.values, X_test.values, y_train.values, y_test.values
 
-    def __transform_shape(self, ndarray):
-        """Transform data into a feedable form for LSTM-layer."""
-        N, M = ndarray.shape
+    def __get_features(self):
+        """
+        Create lagged variables in `self.data`.
+
+        * Returns:
+            * (X, y): `numpy.ndarray`s of feature and target values.
+        """
+        cols = ["lag_" + str(i) for i in range(1, self.maxlag+1)]
+
+        for i, colname in enumerate(cols, 1):
+            if isinstance(self.data.index, pd.core.index.MultiIndex):
+                lag = self.data.groupby(self.cross_label)["y"].shift(i)
+            else:
+                lag = self.data["y"].shift(i)
+
+            self.data[colname] = lag
+
+        self.data = self.data.dropna(axis=0)
+
+        # Split into target and features
+        y = self.data.iloc[:, 1]
+        X = self.data.iloc[:, 2:]
+
+        return X, y
+
+    def __transform_shape(self, X):
+        """
+        Transform data into a feedable form for `cell`-layer.
+
+        * Parameters:
+            * `X`: `numpy.ndarray` of shape `(num_samples, maxlag)`
+
+        * Returns:
+            * `out`: `numpy.ndarray` of shape (num_samples, 1, maxlag)
+        """
+        N, M = X.shape
         new_shape = (N, 1, M)
-        out = ndarray.reshape(new_shape)
+        out = X.reshape(new_shape)
 
         return out
 
-    def __inverse_transform_shape(self, ndarray):
-        """Transform data into tabular shape."""
-        N, _, M = ndarray.shape
+    def __inverse_transform_shape(self, X):
+        """
+        Transform data into tabular shape.
+
+        * Parameters:
+            * `X`: `numpy.ndarray` of shape `(num_samples, 1, maxlag)`
+
+        * Returns:
+            * `out`: `numpy.ndarray` of shape `(num_samples, maxlag)`
+        """
+        N, _, M = X.shape
         old_shape = (N, M)
-        out = ndarray.reshape(old_shape)
+        out = X.reshape(old_shape)
 
         return out
 
     def __locate_train_test(self, data):
+        """
+        Create logical vector for indexing.
+
+        * Parameters:
+            * `data`: `pandas.DataFrame` with a `pandas.DatetimeIndex`.
+
+        * Returns:
+            * `is_train`: `boolean` array. `True` if row belongs to train set.
+            * `ìs_test`: `boolean` array. `True` if row belongs to test set.
+        """
         try:
             # Works if MultiIndex, breaks if not.
-            locate_test = data.index.map(lambda x: x[0] > self.split_at)
-            locate_train = data.index.map(lambda x: x[0] <= self.split_at)
+            is_test = data.index.map(lambda x: x[0] > self.split_at)
+            is_train = data.index.map(lambda x: x[0] <= self.split_at)
         except TypeError:
             # Fall back to DatetimeIndex.
-            locate_test = data.index.map(lambda x: x > self.split_at)
-            locate_train = data.index.map(lambda x: x <= self.split_at)
-        return locate_train, locate_test
+            is_test = data.index.map(lambda x: x > self.split_at)
+            is_train = data.index.map(lambda x: x <= self.split_at)
+        return is_train, is_test
 
-    def plot_fit(self, **kwargs):
-        """Visualize fit."""
+    def plot_fit(self, savepath=None, **kwargs):
+        """
+        Visualize fit of training and test data.
+
+        * Parameters:
+            * `savepath`: Filename to save figure, not saved if `None`.
+            * `**kwargs`: Keyword arguments to `pyplot.subplots`.
+
+        * Returns:
+            * `(fig, ax)`: Figure and axis, depends on index of `self.data`.
+                + if `pandas.DatetimeIndex`: single plot of whole series.
+                + if `pandas.MultiIndex`: multiple subplots for each series.
+        """
         X_train = self.__transform_shape(self.X_train)
         X_test = self.__transform_shape(self.X_test)
 
@@ -173,13 +268,24 @@ class Recurrent(Sequential):
             np.repeat("test", len(self.y_test))])
 
         if isinstance(self.data.index, pd.core.index.MultiIndex):
-            fig, ax = self.__plot_multi_series()
+            fig, ax = self.__plot_multi_series(**kwargs)
         else:
-            fig, ax = self.__plot_single_series()
+            fig, ax = self.__plot_single_series(**kwargs)
+
+        if savepath:
+            plt.savefig(savepath)
 
         return fig, ax
 
     def __plot_single_series(self, **kwargs):
+        """
+        Plot train- and test-fit for single series.
+
+        * Parameters:
+            * `**kwargs`: keyword arguments to `pyplot.subplots`
+        * Returns:
+            * `(fig, ax)`: figure and axis of single plot.
+        """
         is_train = self.data.status == "train"
         train = self.data.loc[is_train, "predictions"]
         test = self.data.loc[~is_train, "predictions"]
@@ -201,8 +307,15 @@ class Recurrent(Sequential):
         return fig, ax
 
     def __plot_multi_series(self, **kwargs):
-        fig, axes = plt.subplots(len(self.cross_dimension), 1,
-                                 **kwargs)
+        """
+        Plot train- and test-fit for multiple series.
+
+        * Parameters:
+            * `**kwargs`: keyword arguments to `pyplot.subplots`
+        * Returns:
+            * `(fig, ax)`: figure and axis of multiple subplots.
+        """
+        fig, axes = plt.subplots(len(self.cross_dimension), 1, **kwargs)
         for cr, ax in zip(self.cross_dimension, axes):
             is_train = self.data.status == "train"
             is_cr = self.data.index.map(lambda x: x[1] == cr).values
@@ -220,44 +333,53 @@ class Recurrent(Sequential):
                     test.values,
                     c="g", label="Test-Fit", alpha=0.8)
 
-        plt.suptitle("Crime-Rate fitted by {}".format(self.cell.__name__))
-        plt.ylabel("Incidents")
+        fig.text(0.04, 0.5, 'Incidents', va='center', rotation='vertical')
+        fig.suptitle("Crime-Rate fitted by {}".format(self.cell.__name__))
         plt.legend()
 
         return fig, axes
 
 
 if __name__ == "__main__":
+    print("Generate show-cases.")
+    # Series by district.
+    print("Grouped by district:")
     datapath = os.path.join("data", "crimes_district.csv")
     dataset = pd.read_csv(datapath, index_col=["Date", "District"],
                           dtype={"crimes_district_total": np.float32},
                           parse_dates=["Date"])
     lstm = Recurrent(dataset, 2, cell=LSTM, epochs=1)
     lstm.train()
-    lstm.plot_fit()
+    lstm.plot_fit(os.path.join("models", "lstm-district-show-case.png"),
+                  figsize=(10, 20))
 
     rnn = Recurrent(dataset, 2, cell=SimpleRNN, epochs=1)
     rnn.train()
-    rnn.plot_fit()
+    rnn.plot_fit(os.path.join("models", "rnn-district-show-case.png"),
+                 figsize=(10, 20))
 
     gru = Recurrent(dataset, 2, cell=GRU, epochs=1)
     gru.train()
-    gru.plot_fit()
+    gru.plot_fit(os.path.join("models", "gru-district-show-case.png"),
+                 figsize=(10, 20))
 
-
-if __name__ == "__main__":
+    # Total series.
+    print("Total series:")
     datapath = os.path.join("data", "crime_total.csv")
     dataset = pd.read_csv(datapath, index_col=["date"],
                           dtype={"crimes_total": np.float32},
                           parse_dates=["date"])
     lstm = Recurrent(dataset, 2, cell=LSTM, epochs=1)
     lstm.train()
-    lstm.plot_fit()
+    lstm.plot_fit(os.path.join("models", "lstm-total-show-case.png"),
+                  figsize=(20, 10))
 
     rnn = Recurrent(dataset, 2, cell=SimpleRNN, epochs=1)
     rnn.train()
-    rnn.plot_fit()
+    rnn.plot_fit(os.path.join("models", "rnn-total-show-case.png"),
+                 figsize=(20, 10))
 
     gru = Recurrent(dataset, 2, cell=GRU, epochs=1)
     gru.train()
-    gru.plot_fit()
+    gru.plot_fit(os.path.join("models", "gru-total-show-case.png"),
+                 figsize=(20, 10))
