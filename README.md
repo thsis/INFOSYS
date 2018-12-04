@@ -16,9 +16,11 @@ The dataset is readily obtainable under [data.gov](https://catalog.data.gov/data
 
 For starters we fit a simple LSTM network with one hidden layer and 4 neurons. The red line is the original data and the blue and green lines depict the fit on the train and test set respectively.
 
-We see that, on the early parts of the time series, the model fits the data only poorly - but after a certain time period the fit becomes better, which even generalizes to the test set.
+We see that, on the early parts of the time series, the model fits the data already very good, however when looking at the test set the fit becomes a little worse, this means that our initial proof of concept is overfitting the training data.
 
-We conclude that the LSTM's forget-gate automatically set the early points in the series to zero and used the more recent observation to generate predictions.
+In spite of the initial overfitting we conclude that the LSTM's forget-gate is indeed capable of automatically setting the irrelevant points in the series to zero, it just needs a little tuning.
+
+Encouraged by these findings we also expect the **GRU** to perform even better, since it is better suited to deal with the problem of both exploding and vanishing gradients. 
 
 ## Further steps
 
