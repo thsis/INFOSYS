@@ -25,7 +25,6 @@ class Recurrent(Sequential):
         * `maxlag`: (`int`) maximum number of lags to create from `data`.
         * `cell`: celltype in `[LSTM, GRU, SimpleRNN]` from `keras.layers`.
         * `cell_neurons`: (`int`) neurons in `cell`'s hidden layer.
-        * `num_cells`: (`int`) number of cells.
         * `lossfunc`: loss-function to be used.
         * `optimizer`: optimizer to be used.
         * `cellkwargs`: (`dict`) `kwargs` to `keras.Sequential.fit`-method.
@@ -90,10 +89,9 @@ class Recurrent(Sequential):
         X_train = self.__transform_shape(self.X_train)
 
         # add LSTM cells
-        for _ in range(self.num_cells):
-            self.add(self.cell(self.cell_neurons,
-                               input_shape=(1, self.maxlag),
-                               **self.cellkwargs))
+        self.add(self.cell(self.cell_neurons,
+                           input_shape=(1, self.maxlag),
+                           **self.cellkwargs))
         # add final layer
         self.add(Dense(1))
         self.compile(loss=self.lossfunc,
