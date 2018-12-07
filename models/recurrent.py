@@ -32,7 +32,7 @@ class Recurrent(Sequential):
         * `epochs`: (`int`) number of training-epochs.
         * `batch_size`: (`int`) number of samples per batch.
         * `train_size`: (`int`) propotion of training samples.
-          0 < train_size < 1.
+          0 < train_size <= 1.
         * `verbose`: (`bool`) level of verbosity during training.
     """
 
@@ -43,7 +43,7 @@ class Recurrent(Sequential):
         """Instantiate Recurrent class."""
 
         assert maxlag >= 1
-        assert 0 < train_size < 1
+        assert 0 < train_size <= 1
         assert len(data.columns) == 1
 
         # Operate solely on a copy to avoid implicitly changing the data
@@ -112,8 +112,13 @@ class Recurrent(Sequential):
         * Returns:
             * `out`: predictions of model of shape (`n`, 1).
         """
-        X_ = self.__transform_shape(X)
-        return self.predict(X_)
+        if X.shape[1] == self.maxlag:
+            X_ = self.__transform_shape(X)
+            return self.predict(X_)
+
+        else:
+            X_, _ = self.__get_features(X)
+            return self.predict(X_.values)
 
     def __stage(self):
         """
