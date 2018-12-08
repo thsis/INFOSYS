@@ -318,7 +318,8 @@ class Recurrent(Sequential):
         * Returns:
             * `(fig, ax)`: figure and axis of multiple subplots.
         """
-        fig, axes = plt.subplots(len(self.cross_dimension), 1, **kwargs)
+        fig, axes = plt.subplots(len(self.cross_dimension), 1, sharex=True,
+                                 **kwargs)
         for cr, ax in zip(self.cross_dimension, axes):
             is_train = self.data.status == "train"
             is_cr = self.data.index.map(lambda x: x[1] == cr).values
