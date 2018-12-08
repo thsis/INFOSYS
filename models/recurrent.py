@@ -301,7 +301,7 @@ class Recurrent(Sequential):
         ax.plot(train.index, train.values,
                 c="blue", label="Train-Fit", alpha=0.8)
         ax.plot(test.index, test.values,
-                c="g", label="Test-Fit", alpha=0.8)
+                c="orange", label="Test-Fit", alpha=0.8)
 
         plt.title("Crime-Rate fitted by {}".format(self.cell.__name__))
         plt.ylabel("Incidents")
@@ -335,7 +335,7 @@ class Recurrent(Sequential):
                     c="blue", label="Train-Fit", alpha=0.8)
             ax.plot(test.index.droplevel(self.cross_label),
                     test.values,
-                    c="g", label="Test-Fit", alpha=0.8)
+                    c="orange", label="Test-Fit", alpha=0.8)
 
         fig.text(0.04, 0.5, 'Incidents', va='center', rotation='vertical')
         fig.suptitle("Crime-Rate fitted by {}".format(self.cell.__name__))
