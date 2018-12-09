@@ -6,7 +6,7 @@ import pandas as pd
 from sklearn.preprocessing import MinMaxScaler
 
 from keras.models import Sequential
-from keras.layers import LSTM, SimpleRNN, GRU, Dense
+from keras.layers import LSTM, SimpleRNN, GRU, Dense, Activation
 
 from matplotlib import pyplot as plt
 
@@ -88,12 +88,12 @@ class Recurrent(Sequential):
         """Train the model based on parameters passed to `__init__`."""
         X_train = self.__transform_shape(self.X_train)
 
-        # add LSTM cells
         self.add(self.cell(self.cell_neurons,
                            input_shape=(1, self.maxlag),
                            **self.cellkwargs))
-        # add final layer
         self.add(Dense(1))
+        self.add(Activation('relu'))
+
         self.compile(loss=self.lossfunc,
                      optimizer=self.optimizer)
         self.fit(X_train, self.y_train,
