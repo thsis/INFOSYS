@@ -56,7 +56,7 @@ def get_alpha(x):
         c = 1 - 9900/490000
         return max(0.01, m*x+c)
 
-    
+
 def get_subset(data, year, crime=None):
     """Extract data that matches a specific type of crime and year."""
     if crime is None:
