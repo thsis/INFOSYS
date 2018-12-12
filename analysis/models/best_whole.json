@@ -1,0 +1,1 @@
+{"SimpleRNN": {"batch_size": 6.0, "cell_neurons": 29.0, "maxlag": 200.0}, "LSTM": {"batch_size": 5.0, "cell_neurons": 27.0, "maxlag": 7.0}, "GRU": {"batch_size": 6.0, "cell_neurons": 30.0, "maxlag": 80.0}}
