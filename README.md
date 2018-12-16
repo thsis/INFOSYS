@@ -12,7 +12,7 @@ The dataset is readily obtainable under [data.gov](https://catalog.data.gov/data
 
 ## Initial findings
 
-![alt-text](https://github.com/thsis/INFOSYS/blob/master/models/lstm-total-show-case.png "First fit using LSTM and only one lagged variable")
+![alt-text](https://github.com/thsis/INFOSYS/blob/master/analysis/ "LSTM on the whole series")
 
 For starters we fit a simple LSTM network with one hidden layer and 4 neurons. The red line is the original data and the blue and green lines depict the fit on the train and test set respectively.
 
@@ -20,7 +20,7 @@ We see that, on the early parts of the time series, the model fits the data alre
 
 In spite of the initial overfitting we conclude that the LSTM's forget-gate is indeed capable of automatically setting the irrelevant points in the series to zero, it just needs a little tuning.
 
-Encouraged by these findings we also expect the **GRU** to perform even better, since it is better suited to deal with the problem of both exploding and vanishing gradients. 
+Encouraged by these findings we also expect the **GRU** to perform even better, since it is better suited to deal with the problem of both exploding and vanishing gradients.
 
 ## Further steps
 

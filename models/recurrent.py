@@ -184,7 +184,7 @@ class Recurrent(Sequential):
         self.data = self.data.dropna(axis=0)
 
         # Split into target and features
-        y = self.data.iloc[:, 1]
+        y = self.data.iloc[:, 0]
         X = self.data.iloc[:, 2:]
 
         return X, y
