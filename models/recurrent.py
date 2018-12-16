@@ -261,10 +261,6 @@ class Recurrent(Sequential):
         train_fit = self.predict(X_train)
         test_fit = self.predict(X_test)
 
-        # Rescale
-        train_fit = self.scaler.inverse_transform(train_fit)
-        test_fit = self.scaler.inverse_transform(test_fit)
-
         self.data["predictions"] = np.concatenate([train_fit, test_fit])
         self.data["status"] = np.concatenate([
             np.repeat("train", len(self.y_train)),
