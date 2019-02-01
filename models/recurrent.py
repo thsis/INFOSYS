@@ -34,12 +34,14 @@ class Recurrent(Sequential):
         * `train_size`: (`int`) propotion of training samples.
           0 < train_size <= 1.
         * `verbose`: (`bool`) level of verbosity during training.
+        * `metrics`: (`list`) list of evaluation metrics. These are **not** 
+          used for training.
     """
 
     def __init__(self, data, maxlag, cell, cell_neurons=4, num_cells=1,
                  lossfunc='mean_squared_error', optimizer='adam',
                  cellkwargs={}, fitkwargs={}, epochs=10, batch_size=1,
-                 train_size=0.8, verbose=True):
+                 train_size=0.8, verbose=True, metrics=None):
         """Instantiate Recurrent class."""
 
         assert maxlag >= 1
@@ -67,7 +69,7 @@ class Recurrent(Sequential):
         self.split_at_idx = int(self.train_size * len(self.time_dimension))
         self.split_at = self.time_dimension[self.split_at_idx]
 
-        # Save parameters for LSTM-architecture
+        # Save parameters for architecture
         self.cell = cell
         self.batch_size = batch_size
         self.num_cells = num_cells
@@ -78,6 +80,7 @@ class Recurrent(Sequential):
         self.cell_neurons = cell_neurons
         self.fitkwargs = fitkwargs
         self.cellkwargs = cellkwargs
+        self.metrics = metrics
 
         self.X_train, self.X_test, self.y_train, self.y_test = self.__stage()
 
@@ -95,7 +98,8 @@ class Recurrent(Sequential):
         self.add(Activation('relu'))
 
         self.compile(loss=self.lossfunc,
-                     optimizer=self.optimizer)
+                     optimizer=self.optimizer,
+                     metrics=self.metrics)
         self.fit(X_train, self.y_train,
                  epochs=self.epochs,
                  batch_size=self.batch_size,
