@@ -34,8 +34,8 @@ class Recurrent(Sequential):
         * `train_size`: (`int`) propotion of training samples.
           0 < train_size <= 1.
         * `verbose`: (`bool`) level of verbosity during training.
-        * `metrics`: (`list`) list of evaluation metrics. These are **not** 
-          used for training.
+        * `metrics`: `list` of evaluation metrics. These are **not** used
+          during training.
     """
 
     def __init__(self, data, maxlag, cell, cell_neurons=4, num_cells=1,
@@ -234,7 +234,7 @@ class Recurrent(Sequential):
 
         * Returns:
             * `is_train`: `boolean` array. `True` if row belongs to train set.
-            * `ìs_test`: `boolean` array. `True` if row belongs to test set.
+            * `is_test`: `boolean` array. `True` if row belongs to test set.
         """
         try:
             # Works if MultiIndex, breaks if not.
