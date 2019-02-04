@@ -12,7 +12,7 @@ The dataset is readily obtainable under [data.gov](https://catalog.data.gov/data
 
 ## Initial findings
 
-![alt-text](https://github.com/thsis/INFOSYS/blob/master/analysis/ "LSTM on the whole series")
+![alt-text](https://github.com/thsis/INFOSYS/blob/master/analysis/figures/best_whole_LSTM.png "LSTM on the whole series")
 
 For starters we fit a simple LSTM network with one hidden layer and 4 neurons. The red line is the original data and the blue and green lines depict the fit on the train and test set respectively.
 
@@ -26,6 +26,19 @@ Encouraged by these findings we also expect the **GRU** to perform even better, 
 
 1. improve fit even further by an extensive grid search.
 2. extend the research question in order to provide predictions per district/ward, which may (or may not) prove to be a helpful tool to the authorities trying to make a decision about the allocation of patrol cars.
+
+## Getting the code of this repo to run
+
+The first step is to install all requirements:
+```bash
+pip install -r requirements.txt
+```
+
+The second step is to install the repo as a package (this makes importing modules from a parent-directory possible):
+```bash
+pip install -e .
+```
+You can skip this step. However, imports will start failing. If you do not want to install random code from an untrusted repository, you can move any notebooks/scripts you want to execute into the parent directory.
 
 ## Documentation
 
