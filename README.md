@@ -14,7 +14,7 @@ The dataset is readily obtainable under [data.gov](https://catalog.data.gov/data
 
 ![alt-text](https://github.com/thsis/INFOSYS/blob/master/analysis/figures/best_whole_LSTM.png "LSTM on the whole series")
 
-For starters we fit a simple LSTM network with one hidden layer and 4 neurons. The red line is the original data and the blue and green lines depict the fit on the train and test set respectively.
+For starters we fit a simple LSTM network with one hidden layer and 4 neurons. The red line is the original data and the blue and orange lines depict the fit on the train and test set respectively.
 
 We see that, on the early parts of the time series, the model fits the data already very good, however when looking at the test set the fit becomes a little worse, this means that our initial proof of concept is overfitting the training data.
 
