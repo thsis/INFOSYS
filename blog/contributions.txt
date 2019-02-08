@@ -1,0 +1,22 @@
+Contribution:
+Introduction (Marc)
+Introduction to Recurrent Neural Networks (Marc)
+  - Formatting sequential data (Marc)
+  - Evaluation metric and benchmark (Marc)
+  - Training (Marc)
+Alternative formatting with prediction sequence (Marc)
+  - Stateful recurrent neural networks (Marc)
+  - Comparing training behaviour (Marc)
+
+The Vanishing Gradient Problem (Carolin)
+Literature Review (Carolin)
+Advanced RNNs: LSTMs and GRUs
+  - LSTM Networks - Long Short-Term Memory Networks (Carolin)
+  - GRU Networks - Gated Recurrent Unit Networks (Carolin)
+
+  - Backpropagation LSTM (Thomas)
+  - Backpropagation GRU (Thomas)
+
+Parameter Tuning using hyperopt (Thomas)
+Results and Comparison of the Models (Carolin)
+Appendix (Thomas)
